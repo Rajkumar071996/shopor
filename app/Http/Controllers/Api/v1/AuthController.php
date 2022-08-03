@@ -22,14 +22,15 @@ class AuthController extends Controller
            // 'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
            // 'mobile' => 'required|numeric||unique:users',
-            'password' => 'required|string|regex:/^.*(?=.{3,})(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[\d\x])(?=.*[!$#%]).*$/|min:8'
+            'password' => 'required|string'
         ]);
         if ($validator->fails()) {
             return response()->json([
                 'status'   => "failed",
-                'message'   => 'Validation errors',
-                'data'      => $validator->errors()
-            ],400);
+                'statuscode'   => "TXF",
+                'message'      => $validator->errors()->first(),
+                'data' => $validator->errors()
+            ], 200);
         }
        $otp = rand(111111, 999999); 
 	   $user = User::create([
@@ -40,11 +41,13 @@ class AuthController extends Controller
 
 		if($user)
 		{
+            $resp['statuscode'] = 'TXN';
 	       $resp['status'] = 'successOtp';
 	       $resp['message'] = 'Registration successfully Otp Send on '.$request->email;
 	       $resp['otp'] = $otp;
 	     
 		}else{
+           $resp['statuscode'] = 'TXF';
            $resp['status'] = 'failed';
 	       $resp['message'] = 'Registration failed';  
 		}
@@ -62,10 +65,11 @@ class AuthController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
+                'statuscode'   => "TXF",
                 'status'   => "failed",
-                'message'   => 'Validation errors',
+                'message'   => $validator->errors()->first(),
                 'data'      => $validator->errors()
-            ],400);
+            ],200);
         }	
 
        $user = User:: where('email',$request->email)->where('otp',$request->otp)->first();
@@ -77,6 +81,7 @@ class AuthController extends Controller
 	       	 $resp['token_type'] = 'Bearer';
 			 $resp['status'] = 'success';
 	   }else{
+            $resp['statuscode'] = 'TXF';
             $resp['status'] = 'failed';
 	        $resp['message'] = 'Invalid credencials'; 
          
@@ -90,9 +95,10 @@ class AuthController extends Controller
 	{
 		if (!Auth::attempt($request->only('email', 'password'))) {
 		  return response()->json([
+		  	'statuscode' =>"TXN",
 		  	'status' =>"failed",
 		    'message' => 'Invalid login details'
-		  ], 401);  
+		  ], 200);  
 	    }
 
 		$user = User::where('email', $request['email'])->firstOrFail();
